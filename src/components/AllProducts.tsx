@@ -1,6 +1,6 @@
 'use client'; 
 import { useEffect , useState} from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 
 
 interface Product {
@@ -12,7 +12,9 @@ interface Product {
 }
 const AllProducts = () => {
    const [products, setProducts] = useState<Product[]>([]);
-   
+    const [searchParams, setSearchParams] = useSearchParams();
+  const searchProduct = searchParams.get("search") || "";
+
 
    useEffect(()=>{
 
@@ -32,22 +34,72 @@ const AllProducts = () => {
     },[])
 
 
- 
+   const filteredProducts = products.filter((p) =>
+    p.title.toLowerCase().includes(searchProduct.toLowerCase())
+  );
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value) {
+      setSearchParams({ search: value });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+
   return (
   
-      <div className="bg-white">
+<div className="bg-white  items-center px-4 py-16">
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
+        <div className=" relative  flex items-center rounded-md bg-white pl-3 order">
 
-  {/* <h1> 
-     Hello 
-     
-     </h1> */}
-  <h1> 
-Welcom TO OUR STORE     
+     <input
+            id="searchProduct"
+            name="searchProduct"
+            type="text"
+            placeholder="search for any product"
+             value={searchProduct}
+        onChange={handleSearchChange}
+              className="
+    block
+    w-full
+    rounded-md
+    border
+    border-gray-300
+    bg-white
+    py-2
+    px-3
+    text-base
+    text-gray-900
+    placeholder-gray-400
+    focus:border-gray-700
+    focus:ring-1
+    focus:ring-gray-500
+    focus:outline-none
+    sm:text-sm
+  "
+          />
+  <svg
+    className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-4.35-4.35m1.57-5.16a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+          </div>
+    <h1> 
+WELCOME TO OUR STORE     
      </h1>
      <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-      {products.map((product) => (
-        <div key={product.id} className=" bg-gray-100group relative border border-gray-200 rounded-md shadow-sm p-4"
+      {filteredProducts.map((product) => (
+        <div key={product.id} className=" bg-gray-100 group relative border border-gray-200 rounded-md shadow-sm p-4"
 >
           <img
             src={product.image}

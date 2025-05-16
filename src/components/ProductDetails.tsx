@@ -25,7 +25,7 @@ const ProductDetails = () => {
       <div className="flex flex-col lg:flex-row gap-10">
 
         <div className="flex-shrink-0 w-full lg:w-1/3">
-           <img src={product.image} alt={` ${product.title}`} 
+           <img src={product?.image} alt={` ${product?.title}`} 
             className="w-full h-64 object-contain rounded-md border border-gray-300 shadow-md"/>
         </div>
         </div>
