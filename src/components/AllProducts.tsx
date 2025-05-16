@@ -1,6 +1,7 @@
 'use client'; 
-import { useEffect , useState} from "react";
+import { useEffect , useMemo, useState} from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import debounce from "lodash.debounce";
 
 
 interface Product {
@@ -37,21 +38,42 @@ const AllProducts = () => {
    const filteredProducts = products.filter((p) =>
     p.title.toLowerCase().includes(searchProduct.toLowerCase())
   );
+
+const debouncedSearch = useMemo(
+  () =>
+    debounce((value: string) => {
+      if (value) {
+        setSearchParams({ search: value });
+      } else {
+        setSearchParams({});
+      }
+    }, 200),
+  [setSearchParams]
+);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value) {
-      setSearchParams({ search: value });
-    } else {
-      setSearchParams({});
-    }
+    debouncedSearch(e.target.value);
+
   };
+
+    useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
 
   return (
   
 <div className="bg-white  items-center px-4 py-16">
+                <h1 className=" text-center"> 
+WELCOME TO OUR STORE     
+     </h1>
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
+        
         <div className=" relative  flex items-center rounded-md bg-white pl-3 order">
+
 
      <input
             id="searchProduct"
@@ -94,9 +116,7 @@ const AllProducts = () => {
     />
   </svg>
           </div>
-    <h1> 
-WELCOME TO OUR STORE     
-     </h1>
+
      <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
       {filteredProducts.map((product) => (
         <div key={product.id} className=" bg-gray-100 group relative border border-gray-200 rounded-md shadow-sm p-4"
