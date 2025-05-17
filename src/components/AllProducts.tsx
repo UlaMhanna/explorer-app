@@ -2,6 +2,9 @@
 import { useEffect , useMemo, useState} from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import debounce from "lodash.debounce";
+import { ChevronLeftIcon, ChevronRightIcon ,  MagnifyingGlassIcon } from '@heroicons/react/20/solid'
+import Pagination from "./Pagination";
+
 
 
 interface Product {
@@ -15,6 +18,10 @@ const AllProducts = () => {
    const [products, setProducts] = useState<Product[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
   const searchProduct = searchParams.get("search") || "";
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+
 
 
    useEffect(()=>{
@@ -38,6 +45,17 @@ const AllProducts = () => {
    const filteredProducts = products.filter((p) =>
     p.title.toLowerCase().includes(searchProduct.toLowerCase())
   );
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const paginatedProducts = filteredProducts.slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
+const handlePageChange = (page: number) => {
+  if (page >= 1 && page <= totalPages) {
+    setCurrentPage(page);
+  }
+};
+
 
 const debouncedSearch = useMemo(
   () =>
@@ -56,6 +74,7 @@ const debouncedSearch = useMemo(
     debouncedSearch(e.target.value);
 
   };
+
 
     useEffect(() => {
     return () => {
@@ -101,7 +120,9 @@ WELCOME TO OUR STORE
     sm:text-sm
   "
           />
-  <svg
+                <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
+
+  {/* <svg
     className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
@@ -114,21 +135,22 @@ WELCOME TO OUR STORE
       strokeWidth={2}
       d="M21 21l-4.35-4.35m1.57-5.16a7 7 0 11-14 0 7 7 0 0114 0z"
     />
-  </svg>
+  </svg> */}
+
           </div>
 
      <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-      {filteredProducts.map((product) => (
-        <div key={product.id} className=" bg-gray-100 group relative border border-gray-200 rounded-md shadow-sm p-4"
+      {paginatedProducts.map((product) => (
+        <div key={product.id} className=" bg-gray-50 group relative border border-gray-100 rounded-md shadow-sm p-4"
 >
           <img
             src={product.image}
             alt={`${product.title}`}
-  className="h-40 w-40 mx-auto rounded-md bg-gray-200 object-cover shadow-sm group-hover:opacity-75"
+  className="h-40 w-40 mx-auto rounded-md bg-gray-200 object-cover shadow-sm group-hover:opacity-75 "
           />
           <div className="mt-4 flex justify-between">
             <div>
-              <h3 className="text-sm text-gray-700">
+              <h3 className="text-md text-gray-900">
                <Link to={`/product/${product.id}`}>
                   <span aria-hidden="true" className="absolute inset-0"></span>
                   {product.title}
@@ -136,13 +158,15 @@ WELCOME TO OUR STORE
               </h3>
               <p className="mt-1 text-sm text-gray-500">{product.category}</p>
             </div>
-            <p className="text-lg  mt-1 font-medium text-green-900">${product.price}</p>
+
+            <p className="  text-lg  mt-1 font-medium text-green-900">${product.price}</p>
 
           </div>
         </div>
       ))}
     </div>
-    </div>
+         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange}/>
+   </div>
     
      </div>
     );
