@@ -2,8 +2,11 @@
 import { useEffect , useMemo, useState} from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import debounce from "lodash.debounce";
-import { ChevronLeftIcon, ChevronRightIcon ,  MagnifyingGlassIcon } from '@heroicons/react/20/solid'
+import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Pagination from "./Pagination";
+import { ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+
+ import { useNavigate } from "react-router-dom";
 
 
 
@@ -20,7 +23,24 @@ const AllProducts = () => {
   const searchProduct = searchParams.get("search") || "";
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const [sortOption, setSortOption] = useState<string>(""); 
+  const [showDropdown, setShowDropdown] = useState(false);
 
+const [categories, setCategories] = useState<string[]>([]);
+const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+const [minPrice, setMinPrice] = useState<number | ''>('');
+const [maxPrice, setMaxPrice] = useState<number | ''>('');
+
+useEffect(() => {
+  fetch('https://fakestoreapi.com/products/categories')
+    .then(res => res.json())
+    .then(data => setCategories(data));
+}, []);
+
+const navigate = useNavigate();
+const handleViewDetails = (id: number) => {
+  navigate(`/products/${id}?search=${searchParams}&sort=${sortOption}`);
+};  
 
 
 
@@ -40,13 +60,49 @@ const AllProducts = () => {
       });
    
     },[])
+useEffect(() => {
+  setCurrentPage(1);
+}, [searchProduct, selectedCategories, minPrice, maxPrice]);
 
 
-   const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(searchProduct.toLowerCase())
-  );
-    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-    const paginatedProducts = filteredProducts.slice(
+    
+
+  const filteredSearchProducts = products.filter((p) => {
+  const matchesSearch = p.title.toLowerCase().includes(searchProduct.toLowerCase());
+  const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(p.category);
+  const matchesPrice =
+    (minPrice === '' || p.price >= minPrice) &&
+    (maxPrice === '' || p.price <= maxPrice);
+
+  return matchesSearch && matchesCategory && matchesPrice;
+});
+
+  const sortedProducts = useMemo(() => {
+  let sorted = [...filteredSearchProducts];
+
+  switch (sortOption) {
+    case "price-asc":
+      sorted.sort((a, b) => a.price - b.price);
+      break;
+    case "price-desc":
+      sorted.sort((a, b) => b.price - a.price);
+      break;
+    case "title-asc":
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case "title-desc":
+      sorted.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    default:
+      break;
+  }
+
+  return sorted;
+}, [filteredSearchProducts, sortOption]);
+
+
+    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+    const paginatedProducts = sortedProducts.slice(
   (currentPage - 1) * itemsPerPage,
   currentPage * itemsPerPage
 );
@@ -83,92 +139,152 @@ const debouncedSearch = useMemo(
   }, [debouncedSearch]);
 
 
+useEffect(() => {
+  setSearchParams(searchParams);
+  setSortOption(sortOption);
+}, []);
+
+
+const toggleCategory = (category: string) => {
+  setSelectedCategories(prev =>
+    prev.includes(category)
+      ? prev.filter(c => c !== category)
+      : [...prev, category]
+  );
+};
+
   return (
   
-<div className="bg-white  items-center px-4 py-16">
-                <h1 className=" text-center"> 
-WELCOME TO OUR STORE     
-     </h1>
-      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-        
-        <div className=" relative  flex items-center rounded-md bg-white pl-3 order">
+<div className="bg-white px-4 py-16">
+  <div className="max-w-7xl mx-auto">
+    <h1 className="text-center text-2xl font-bold mb-8">
+      WELCOME TO OUR STORE
+    </h1>
 
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-end mb-10">
 
-     <input
-            id="searchProduct"
-            name="searchProduct"
-            type="text"
-            placeholder="search for any product"
-             value={searchProduct}
-        onChange={handleSearchChange}
-              className="
-    block
-    w-full
-    rounded-md
-    border
-    border-gray-300
-    bg-white
-    py-2
-    px-3
-    text-base
-    text-gray-900
-    placeholder-gray-400
-    focus:border-gray-700
-    focus:ring-1
-    focus:ring-gray-500
-    focus:outline-none
-    sm:text-sm
-  "
-          />
-                <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search for  product"
+          value={searchProduct}
+          onChange={handleSearchChange}
+          className="w-full rounded border border-gray-300 px-4 py-2 text-sm "
+        />
+        <MagnifyingGlassIcon className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none"  />
+      </div>
 
-  {/* <svg
-    className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
+      <div className="relative">
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="w-full rounded border text-gray-400 border-gray-300 px-4 py-2 text-sm bg-white appearance-none pr-10"
+        >
+          <option value ="">Sort by</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="title-asc">Title: A–Z</option>
+          <option value="title-desc">Title: Z–A</option>
+        </select>
+        <ArrowsUpDownIcon className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+      </div>
+<div className="relative">
+  <button
+    onClick={() => setShowDropdown(!showDropdown)}
+    className="w-full flex justify-between items-center border border-gray-300 px-4 py-2 text-sm rounded bg-white"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M21 21l-4.35-4.35m1.57-5.16a7 7 0 11-14 0 7 7 0 0114 0z"
-    />
-  </svg> */}
+    <span className="font-small text-gray-400">Filters</span>
+                <FunnelIcon aria-hidden="true" className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+  </button>
 
-          </div>
+  {showDropdown && (
+    <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 shadow-md rounded-lg p-4 space-y-4">
+      
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Category</p>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <label key={category} className="text-sm capitalize">
+              <input
+                type="checkbox"
+                value={category}
+                checked={selectedCategories.includes(category)}
+                onChange={() => toggleCategory(category)}
+                className="mr-1"
+              />
+              {category}
+            </label>
+          ))}
+        </div>
+      </div>
 
-     <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Price Range</p>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            placeholder="Min"
+            className="w-1/2 border px-2 py-1 rounded text-sm"
+            value={minPrice}
+            onChange={(e) => setMinPrice(Number(e.target.value) || '')}
+          />
+          <input
+            type="number"
+            placeholder="Max"
+            className="w-1/2 border px-2 py-1 rounded text-sm"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(Number(e.target.value) || '')}
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2 border-t">
+        <button
+          className="text-sm text-gray-600 hover:underline"
+          onClick={() => {
+            setSelectedCategories([]);
+            setMinPrice('');
+            setMaxPrice('');
+            setShowDropdown(false);
+          }}
+        >
+          Clear
+        </button>
+        <button
+          className="text-sm bg-blue-600 text-white px-3 py-1 rounded"
+          onClick={() => setShowDropdown(false)}
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {paginatedProducts.map((product) => (
-        <div key={product.id} className=" bg-gray-50 group relative border border-gray-100 rounded-md shadow-sm p-4"
->
+        <div
+          key={product.id}
+          className="bg-gray-50 border rounded-lg p-4 shadow hover:shadow-md transition"
+        >
           <img
             src={product.image}
-            alt={`${product.title}`}
-  className="h-40 w-40 mx-auto rounded-md bg-gray-200 object-cover shadow-sm group-hover:opacity-75 "
+            alt={product.title}
+            className="h-40 w-full object-contain mb-4"
           />
-          <div className="mt-4 flex justify-between">
-            <div>
-              <h3 className="text-md text-gray-900">
-               <Link to={`/product/${product.id}`}>
-                  <span aria-hidden="true" className="absolute inset-0"></span>
-                  {product.title}
-                </Link>
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">{product.category}</p>
-            </div>
-
-            <p className="  text-lg  mt-1 font-medium text-green-900">${product.price}</p>
-
-          </div>
+          <h3 className="text-sm font-medium">{product.title}</h3>
+          <p className="text-xs text-gray-500">{product.category}</p>
+          <p className="text-lg font-bold text-green-700 mt-2">${product.price}</p>
         </div>
       ))}
     </div>
-         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange}/>
-   </div>
-    
-     </div>
+
+    <div className="mt-10">
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+    </div>
+  </div>
+</div>
     );
 
 };
