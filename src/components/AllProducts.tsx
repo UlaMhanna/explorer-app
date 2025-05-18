@@ -29,7 +29,10 @@ const AllProducts = () => {
 const [categories, setCategories] = useState<string[]>([]);
 const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 const [minPrice, setMinPrice] = useState<number | ''>('');
-const [maxPrice, setMaxPrice] = useState<number | ''>('');
+const [maxPrice, setMaxPrice] = useState<number | ''>('')
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);;
+
 
 useEffect(() => {
   fetch('https://fakestoreapi.com/products/categories')
@@ -39,27 +42,34 @@ useEffect(() => {
 
 const navigate = useNavigate();
 const handleViewDetails = (id: number) => {
-  navigate(`/products/${id}?search=${searchParams}&sort=${sortOption}`);
+navigate(`/products/${id}?search=${searchProduct}&sort=${sortOption}`);
 };  
 
 
 
-   useEffect(()=>{
+   useEffect(() => {
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null); // clear previous errors if any
 
-    fetch('https://fakestoreapi.com/products')
-    .then(res => {
-        if (!res.ok) throw new Error('Errorrrr');
-        return res.json();
-      })
-      .then(data => {
-         setProducts(data);
-        console.log(data)
-      })
-      .catch(err => {
+    try {
+      const res = await fetch('https://fakestoreapi.com/products');
+      if (!res.ok) throw new Error('Errorrrr');
 
-      });
-   
-    },[])
+      const data = await res.json();
+      setProducts(data);
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProducts();
+}, []);
+
+
+
 useEffect(() => {
   setCurrentPage(1);
 }, [searchProduct, selectedCategories, minPrice, maxPrice]);
@@ -137,12 +147,6 @@ const debouncedSearch = useMemo(
       debouncedSearch.cancel();
     };
   }, [debouncedSearch]);
-
-
-useEffect(() => {
-  setSearchParams(searchParams);
-  setSortOption(sortOption);
-}, []);
 
 
 const toggleCategory = (category: string) => {
@@ -262,10 +266,27 @@ const toggleCategory = (category: string) => {
 </div>
     </div>
 
+    {loading ? (
+      <div className="flex justify-center items-center py-10">
+
+  <svg className="animate-spin h-6 w-6 text-gray-600" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+  </svg>
+</div>
+    ) : error ? (
+      <div className="bg-red-100 text-red-700 p-4 rounded-md text-sm">
+        {error}
+      </div>
+    ) : ( 
+    <div>
+
+   
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {paginatedProducts.map((product) => (
-        <div
+        <Link
           key={product.id}
+  to={`/products/${product.id}?search=${searchProduct}&sort=${sortOption}`}
           className="bg-gray-50 border rounded-lg p-4 shadow hover:shadow-md transition"
         >
           <img
@@ -276,13 +297,15 @@ const toggleCategory = (category: string) => {
           <h3 className="text-sm font-medium">{product.title}</h3>
           <p className="text-xs text-gray-500">{product.category}</p>
           <p className="text-lg font-bold text-green-700 mt-2">${product.price}</p>
-        </div>
+        </Link>
       ))}
     </div>
 
     <div className="mt-10">
       <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
     </div>
+     </div>
+    )}
   </div>
 </div>
     );
