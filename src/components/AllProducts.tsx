@@ -5,8 +5,7 @@ import debounce from "lodash.debounce";
 import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Pagination from "./Pagination";
 import { ArrowsUpDownIcon } from '@heroicons/react/24/outline';
-
- import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -18,20 +17,20 @@ interface Product {
   image: string;
 }
 const AllProducts = () => {
-   const [products, setProducts] = useState<Product[]>([]);
-    const [searchParams, setSearchParams] = useSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchProduct = searchParams.get("search") || "";
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [sortOption, setSortOption] = useState<string>(""); 
   const [showDropdown, setShowDropdown] = useState(false);
-
-const [categories, setCategories] = useState<string[]>([]);
-const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-const [minPrice, setMinPrice] = useState<number | ''>('');
-const [maxPrice, setMaxPrice] = useState<number | ''>('')
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState<string | null>(null);;
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [minPrice, setMinPrice] = useState<number | ''>('');
+  const [maxPrice, setMaxPrice] = useState<number | ''>('')
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);;
+  const [favorites, setFavorites] = useState<number[]>([]);
 
 
 useEffect(() => {
@@ -157,6 +156,14 @@ const toggleCategory = (category: string) => {
   );
 };
 
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('favorites') || '[]');
+    setFavorites(saved);
+  }, []);
+
+  
+
   return (
   
 <div className="bg-white px-4 py-16">
@@ -200,7 +207,7 @@ const toggleCategory = (category: string) => {
     <span className="font-small text-gray-400">Filters</span>
                 <FunnelIcon aria-hidden="true" className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
   </button>
-
+ 
   {showDropdown && (
     <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 shadow-md rounded-lg p-4 space-y-4">
       
@@ -264,6 +271,8 @@ const toggleCategory = (category: string) => {
     </div>
   )}
 </div>
+
+
     </div>
 
     {loading ? (
@@ -283,12 +292,33 @@ const toggleCategory = (category: string) => {
 
    
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {paginatedProducts.map((product) => (
-        <Link
+     {paginatedProducts.map((product) => {
+  const isFavorite = favorites.includes(product.id);
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault(); 
+    const updated = isFavorite
+      ? favorites.filter(id => id !== product.id)
+      : [...favorites, product.id];
+
+    setFavorites(updated);
+    localStorage.setItem('favorites', JSON.stringify(updated));
+  };
+
+  return (
+    <Link
           key={product.id}
   to={`/products/${product.id}?search=${searchProduct}&sort=${sortOption}`}
           className="bg-gray-50 border rounded-lg p-4 shadow hover:shadow-md transition"
         >
+                <button
+        onClick={toggleFavorite}
+        className={` top-2 right-2 text-md ${
+          isFavorite ? 'text-red-500' : 'text-gray-400'
+        }`}
+        title="Add to favorites"
+      >
+        ♥
+      </button>
           <img
             src={product.image}
             alt={product.title}
@@ -298,7 +328,9 @@ const toggleCategory = (category: string) => {
           <p className="text-xs text-gray-500">{product.category}</p>
           <p className="text-lg font-bold text-green-700 mt-2">${product.price}</p>
         </Link>
-      ))}
+      )
+      
+      })}
     </div>
 
     <div className="mt-10">
